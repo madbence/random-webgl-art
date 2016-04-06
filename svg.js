@@ -16,7 +16,9 @@ const config = {
   sz: 1,
   res: 30,
   fov: Math.PI / 3,
-  r: 2
+  r: 2,
+  e: 3,
+  w: 3,
 };
 
 const limits = {
@@ -27,6 +29,8 @@ const limits = {
   res: [10, 100, 1],
   fov: [0, Math.PI, 0.01],
   r: [0.1, 10, 0.01],
+  e: [1, 10, 0.01],
+  w: [0, 10, 0.01],
   _d: [-2, 2, 0.01],
 }
 
@@ -65,7 +69,7 @@ function distance(p1, p2) {
 
 function ripple(p0, p, t) {
   const d = distance(p0, p);
-  return Math.sin(d * 20. + t / 5.) * Math.exp(-d * 3.);
+  return Math.sin(d * 20. + t / 5.) * Math.exp(-d * config.e);
 }
 
 function fo(pos, t) {
@@ -75,8 +79,8 @@ function fo(pos, t) {
   const r2 = ripple([-sin(t/17. + 1.) * .3 + .5, cos(t/17. + 1.) * .3 + .5], pos, t * 1.7 + 2.) * .1;
   const r3 = ripple([sin(t/23. + 2.) * .4 + .5, cos(t/23. + 2.) * .4 + .5], pos, t * 1.3 + 1.) * .1;
   return [
-    sin(pos[1] * 10. + t) * .03,
-    sin(pos[0] * 10. + t) * .03,
+    sin(pos[1] * 10. + t) * config.w * 0.01,
+    sin(pos[0] * 10. + t) * config.w * 0.01,
     r1 + r2 + r3
   ];
 }
