@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "watchify -o bundle.js index.js"
+    "watch": "watchify -o bundle.js index.js",
+    "watch-svg": "watchify -o svg-bundle.js svg.js"
   },
   "author": "",
   "license": "ISC",
