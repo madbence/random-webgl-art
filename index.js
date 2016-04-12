@@ -6,24 +6,70 @@ const gl = canvas.getContext('webgl');
 gl.enable(gl.DEPTH_TEST);
 gl.clearColor(0.1, 0.1, 0.1, 1);
 
+const config = {
+  cx: 0,
+  cy: -1,
+  cz: -0.5,
+  ox: 0,
+  oy: 0,
+  oz: 0,
+  // t: 0,
+  sx: 2,
+  sy: 1,
+  sz: 1,
+  st: 15,
+  // res: 30,
+  fov: Math.PI / 4,
+  // r: 2,
+  e: 3,
+  w: 3,
+  f1: 10,
+  f2: 17,
+  f3: 23,
+  f4: 10,
+  f5: 20,
+  f6: 20,
+};
+
+const limits = {
+  t: [0, 10, 0.01],
+  sx: [0, 5, 0.01],
+  sy: [0, 5, 0.01],
+  sz: [0, 5, 0.01],
+  st: [0, 20, 0.01],
+  res: [10, 100, 1],
+  fov: [0, Math.PI, 0.01],
+  r: [0.1, 10, 0.01],
+  e: [1, 10, 0.01],
+  w: [0, 10, 0.01],
+  f1: [0, 50, 0.01],
+  f2: [0, 50, 0.01],
+  f3: [0, 50, 0.01],
+  f4: [0, 50, 0.01],
+  f5: [0, 50, 0.01],
+  f6: [0, 50, 0.01],
+  _d: [-2, 2, 0.01],
+}
+
 const vertex = `
 precision mediump float;
 attribute vec4 pos;
 uniform mat4 view;
-uniform float t;
+uniform float t, f1, f2, f3, f4, f5, f6, e, w;
+uniform vec3 s;
 
 float ripple(vec2 p0, vec2 p, float t) {
   float d = distance(p0, p);
-  return sin(d * 20. + t / 5.) * exp(-d * 3.);
+  return sin(d * f5 + t / f6) * exp(-d * e);
 }
 
 vec3 f(vec2 pos, float t) {
-  float r1 = ripple(vec2(sin(t/10.) * .5 + .5, cos(t/10.) * .5 + .5), pos, t) * .1;
-  float r2 = ripple(vec2(-sin(t/17. + 1.) * .3 + .5, cos(t/17. + 1.) * .3 + .5), pos, t * 1.7 + 2.) * .1;
-  float r3 = ripple(vec2(sin(t/23. + 2.) * .4 + .5, cos(t/23. + 2.) * .4 + .5), pos, t * 1.3 + 1.) * .1;
+  float r1 = ripple(vec2(sin(t/f1) * .5 + .5, cos(t/f1) * .5 + .5), pos, t) * .1;
+  float r2 = ripple(vec2(-sin(t/f2 + 1.) * .3 + .5, cos(t/f2 + 1.) * .3 + .5), pos, t * 1.7 + 2.) * .1;
+  float r3 = ripple(vec2(sin(t/f3 + 2.) * .4 + .5, cos(t/f3 + 2.) * .4 + .5), pos, t * 1.3 + 1.) * .1;
   return vec3(
-    sin(pos.y * 10. + t) * .03,
-    sin(pos.x * 10. + t) * .03,
+    sin(pos.y * f4 + t) * w * .01,
+    sin(pos.x * f4 + t) * w * .01,
     r1 + r2 + r3
   );
 }
@@ -31,7 +77,7 @@ vec3 f(vec2 pos, float t) {
 void main() {
   // gl_Position = view * vec4(pos + vec3(_x, _y, _z) - vec3(0.5, 0.5, 0), 1) * vec4(1, 1, 1, 1);
   vec4 offset = vec4(0.5, 0.5, 0, 1);
-  gl_Position = view * (pos - offset + vec4(f(pos.xy, t), 1)) * vec4(3, 2, 1, 1);
+  gl_Position = view * (vec4(s.x, s.y, s.z, 1) * (pos - offset + vec4(f(pos.xy, t), 1)));
 }
 `;
 
@@ -48,6 +94,15 @@ gl.useProgram(program);
 const pos = gl.getAttribLocation(program, 'pos');
 const view = gl.getUniformLocation(program, 'view');
 const t = gl.getUniformLocation(program, 't');
+const f1l = gl.getUniformLocation(program, 'f1');
+const f2l = gl.getUniformLocation(program, 'f2');
+const f3l = gl.getUniformLocation(program, 'f3');
+const f4l = gl.getUniformLocation(program, 'f4');
+const f5l = gl.getUniformLocation(program, 'f5');
+const f6l = gl.getUniformLocation(program, 'f6');
+const el = gl.getUniformLocation(program, 'e');
+const wl = gl.getUniformLocation(program, 'w');
+const sl = gl.getUniformLocation(program, 's');
 
 const RES = 100;
 const R = RES + 1;
@@ -57,21 +112,11 @@ gl.bindBuffer(gl.ARRAY_BUFFER, buf);
 
 gl.enableVertexAttribArray(pos);
 
-function ripple(x0, y0, f, p, x, y) {
-  const dx = x0 - x;
-  const dy = y0 - y;
-  const d = Math.sqrt(dx * dx + dy * dy);
-  return Math.cos(d * Math.PI * 2 * f + p * Math.PI * 2) * 0.5 + 0.5 * Math.exp(-d * 3);
-}
 function f(x, y) {
-  // const r1 = ripple(Math.sin(now / 23) * 0.5 + 0.5, Math.cos(now / 23) * 0.5 + 0.5, 2, 0.5, x, y) * 0.2;
-  // const r2 = ripple(-Math.sin(now / 19) * 0.3 + 0.5, Math.cos(now / 19) * 0.3 + 0.5, 2, 0.5, x, y) * 0.2;
-  // const r3 = ripple(-Math.sin(now / 13) * 0.4 + 0.5, Math.cos(now / 13) * 0.3 + 0.5, 2, 0.5, x, y) * 0.2;
-  // const r4 = ripple(0.5, 0.5, 2, 0.5, x, y) * 0.2;
   return [
-    x, // + Math.sin(now / 5 + y * Math.PI * 6) * 0.01,
-    y, // + Math.sin(now / 7 + x * Math.PI * 7) * 0.03,
-    0, //r1 + r2 + r3 + r4,
+    x,
+    y,
+    0,
   ];
 }
 
@@ -121,19 +166,43 @@ function draw() {
   let now = (s - Date.now()) / 1000 * Math.PI * 2;
   gl.clear(gl.COLOR_BUFFER_BIT, gl.DEPTH_BUFFER_BIT);
   const viewM = mat4.lookAt(mat4.create(), [
-    0,
-    -1,
-    -0.5
-  ], [0, 0, 0], [0, 0, -1]);
-  mat4.mul(viewM, mat4.perspective(mat4.create(), Math.PI / 4, 1300 / 700 , 0.1, 100), viewM);
+    config.cx,
+    config.cy,
+    config.cz
+  ], [config.ox, config.oy, config.oz], [0, 0, -1]);
+  mat4.mul(viewM, mat4.perspective(mat4.create(), config.fov, 1300 / 700 , 0.1, 100), viewM);
   // mat4.mul(viewM, mat4.ortho(mat4.create(), -0.5, 0.5, -0.5, 0.5, 0.1, 100), viewM);
   gl.uniformMatrix4fv(view, false, viewM);
-  gl.uniform1f(t, now / 15);
+  gl.uniform1f(t, now / config.st);
+  gl.uniform1f(f1l, config.f1);
+  gl.uniform1f(f2l, config.f2);
+  gl.uniform1f(f3l, config.f3);
+  gl.uniform1f(f4l, config.f4);
+  gl.uniform1f(f5l, config.f5);
+  gl.uniform1f(f6l, config.f6);
+  gl.uniform1f(el, config.e);
+  gl.uniform1f(wl, config.w);
+  gl.uniform3fv(sl, [config.sx, config.sy, config.sz]);
 
   gl.drawArrays(gl.POINTS, 0, R * R * 1);
 
   requestAnimationFrame(draw);
 }
+
+Object.keys(config).forEach(function (key) {
+  const control = document.createElement('div');
+
+  control.innerHTML = key + ': <input step=' + ((limits[key] || limits._d)[2]) + ' type=range min=' + ((limits[key] || limits._d)[0]) + ' max=' + ((limits[key] || limits._d)[1]) + ' value=' + config[key] + ' /> <input type=number value=' +config[key] + ' />';
+  control.querySelector('input[type="range"]').oninput = function (e) {
+    control.querySelector('input[type="number"]').value = e.target.value;
+    config[key] = +e.target.value;
+  };
+  control.querySelector('input[type="number"]').onchange = function (e) {
+    control.querySelector('input[type="range"]').value = e.target.value;
+    config[key] = +e.target.value;
+  };
+  document.body.appendChild(control);
+});
 
 requestAnimationFrame(draw);
 
